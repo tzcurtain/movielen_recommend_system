@@ -2,6 +2,7 @@
 #include <random>
 #include <fstream>
 #include <algorithm>
+#include "utility.h"
 #include <set>
 #include <map>
 #include <sstream>
@@ -15,27 +16,6 @@ struct ratenode{
 };
 
 vector<ratenode> Rates;
-
-int getID(const string& str){
-	int len = (int)str.length();
-	int base = 1,res = 0;
-	for (int i=len-1;i>=0;--i){
-		if (!isdigit(str[i])){
-			return -1;
-		}
-		res += base * (str[i] - '0');
-		base *= 10;
-	}
-	return res;
-}
-
-double getRate(const string& str){
-	stringstream ss(str);
-	double res;
-	ss >> res;
-	return res;
-}
-
 const int MAXUSERSIZE = 700;
 const int MAXMOVIESIZE = 10000;
 map<int,int> MovieIndexmap;
@@ -125,6 +105,7 @@ void buildModel(){ // get the training and testing sets in the mean time
 		linkedMat[user][index] = 1;
 		linkedTab[user].push_back(index);
 	}
+
 	// get test set
 	for (int i=nowsize;i<size;i++){
 		int user = Rates[order[i]].userid;
@@ -221,19 +202,15 @@ void RankMovie(){
 			Ranks[i][k].id = k;
 		}
 		for (int k=1;k<=fsize;k++){
-			if (f[k]){
-				int nowk = f2[k];
+			if (f[k])
 				for (int j=1;j<=fsize;j++){
-					int nowj = f2[j];
-					Ranks[i][j].val += w[nowj][nowk];
+					Ranks[i][j].val += w[f2[j]][f2[k]];
 				}
-			}
 		}
 		sort(Ranks[i]+1,Ranks[i]+1+fsize,cmp);
 		int nowrank = 0;
 		for (int j=1;j<=fsize;j++){
-			int nowpos = Ranks[i][j].id;
-			if (!f[nowpos]){
+			if (!f[Ranks[i][j].id]){
 				nowrank ++;
 				Ranks[i][j].rank = nowrank;
 			}
@@ -242,7 +219,7 @@ void RankMovie(){
 	}
 }
 
-double GetAccuracy(){
+double GetR(){
 	int nowsize = trainset.size();
 	double sum = 0;
 	for (int i=0;i<nowsize;i++){
@@ -263,7 +240,7 @@ int main(){
 	calcResourceMatrix();
 	RankMovie();
 
-	cout << "Dc is " << dc << " Accuracy is " << GetAccuracy();
+	cout << "Dc is " << dc << " <r> is " << GetR();
 
 	return 0;
 }
